@@ -5,6 +5,8 @@ sparkDemo.py
 
 Created by: Niko Liimatainen 2.6.2017
 Modified by: Niko Liimatainen 3.6.2017
+             Niko Liimatainen 6.6.2017
+             Niko Liimatainen 15.6.2017
 
 
 
@@ -131,3 +133,6 @@ snowDays.registerTempTable('snow_days')
 maxCounts.registerTempTable('max_temps')
 minCounts.registerTempTable('min_temps')
 rainDays.registerTempTable('rain_days')
+
+# convert data frames to temporary tables in order to run SQL-queries in
+# Zeppelin
