@@ -6,7 +6,7 @@ Modified by: Niko Liimatainen 27.6.2017
              Niko Liimatainen 29.6.2017
 
 
-This script is used to access the Mysticon IOT-departments Cassandra database
+This script is used to access the Mysticons IOT-departments Cassandra database
 and calculating averages on their Raspberry Pi weather sensor data.
 """
 
@@ -34,7 +34,7 @@ def avgCounter(df, firstStamp, gmtime, strftime, dumps, dataFile):
         dfAvg = weekDf.groupBy().avg('dbl_v')
         # getting the avg of the double values as a data frame
         avg = dfAvg.head()[0]
-        # this method gets the first value of the column
+        # this line gets the first value of the column
 
         start = strftime('%d.%m.%Y %H:%M:%S', gmtime(firstStamp / 1000))
         end = strftime('%d.%m.%Y %H:%M:%S', gmtime(week / 1000))
@@ -88,8 +88,8 @@ dataFile = open('/media/k8908/J_CENA_X64FREV_EN-US_DV5/CF2017/Python/Data'
 
 df.cache()
 
-# using sparks .cache() function to cahce the that was acquired from cassandr
-# to ram for superior processing speeds
+# using sparks .cache() function to cahce the data  that was acquired from
+# cassandra to ram for superior processing speeds
 
 filterRasp = df.filter(df['entity_id'] == officeRasp)
 filterRuuvi = df.filter(df['entity_id'] == officeRuuvi)
