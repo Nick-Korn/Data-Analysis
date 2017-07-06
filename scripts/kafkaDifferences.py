@@ -5,18 +5,21 @@ kafkaTest.py
 Created by: Niko Liimatainen 28.6.2017
 Modified by: Niko Liimatainen 29.6.2017
              Niko Liimatainen 30.6.2017
+             -||- 3.7.2017
+             -||- 4.7.2017
+             -||- 5.7.2017
+             -||- 6.7.2017
 
-A script that gets live data and compares outside sensor data to the data 
+A script that gets live data and compares outside sensor data to the data
 acquired from the office sensors
-
-_WIP_
 """
 
 import json
+import requests
+import pandas as pd
 
 from pyspark import SparkContext, RDD
 from pyspark.sql import Row, SparkSession, streaming, SQLContext
-import pandas as pd
 from pyspark.streaming import StreamingContext
 from pyspark.streaming.kafka import KafkaUtils
 
@@ -38,8 +41,8 @@ def process(time, rdd):
         # creating a data frame from the received
 
         df.cache()
-        # caching the crated data
 
+        # caching the crated data
         officeRuuvi = df.filter(df['serialNumber'] == devices['officeRuuvi'])
         officeRasp = df.filter(df['serialNumber'] == devices['officeRasp'])
         comp425Ruuvi = df.filter(df['serialNumber'] == devices['d425Ruuvi'])
@@ -62,51 +65,98 @@ def process(time, rdd):
 
 
 def comparison(df, officeRuuvi, officeRasp):
+    if df.count() != 0:
+	# the if statment allows the script work if it has atleast one outer
+	# data source
+        device = df.select(df['serialNumber']).head()[0]
 
-    outerTemp = df.select(df['temp']).head()[0]
-    outerHumidity = df.select(df['humidity']).head()[0]
-    outerPressure = df.select(df['pressure']).head()[0]
-    # getting the outer values for subtraction
+        if device == 'raspi-o827rossr2qn':
+            diffDevice = 'd425Ruuvi'
 
-    tempDiff = officeRasp.select(officeRasp['date'],
-                                 officeRasp['Temp'] - outerTemp)
-    humDiff = officeRasp.select(officeRasp['date'],
-                                officeRasp['Humidity'] - outerHumidity)
-    pressDiff = officeRasp.select(officeRasp['date'],
-                                  officeRasp['Pressure'] - outerPressure)
-    tempDiff2 = officeRuuvi.select(officeRuuvi['date'],
-                                   officeRuuvi['Temp'] - outerTemp)
-    humDiff2 = officeRuuvi.select(officeRuuvi['date'],
-                                  officeRuuvi['Humidity'] - outerHumidity)
-    pressDiff2 = officeRuuvi.select(officeRuuvi['date'],
-                                    officeRuuvi['Pressure'] - outerPressure)
-    # subtracting outer from office values to get differences
+        elif device == 'ruuvitag-F7AFD68CBFB1':
+            diffDevice = 'd425Rasp'
 
-    placeHolder = tempDiff.join(humDiff, on='date')
+        elif device == 'raspi-o827ro3qoqqo':
+            diffDevice = 'hallway'
 
-    placeHolder2 = placeHolder.join(pressDiff, on='date')
+        elif device == 'raspi-o827ro1884pn':
+            diffDevice = 'staircase'
 
-    pandasHolder = placeHolder2.toPandas()
+	# if statments for identifying the current device being opertaed 
+	# and assigning it's name for id purposes
 
-    tmp = tempDiff2.join(humDiff2, on='date')
+        outerTemp = df.select(df['temp']).head()[0]
+        outerHumidity = df.select(df['humidity']).head()[0]
+        outerPressure = df.select(df['pressure']).head()[0]
+        # getting the outer values for subtraction
 
-    tmp2 = tmp.join(pressDiff2, on='date')
+        tempDiff = officeRasp.select(officeRasp['date'],
+                                     officeRasp['Temp'] - outerTemp)
+        humDiff = officeRasp.select(officeRasp['date'],
+                                    officeRasp['Humidity'] - outerHumidity)
+        pressDiff = officeRasp.select(officeRasp['date'],
+                                      officeRasp['Pressure'] - outerPressure)
+        tempDiff2 = officeRuuvi.select(officeRuuvi['date'],
+                                       officeRuuvi['Temp'] - outerTemp)
+        humDiff2 = officeRuuvi.select(officeRuuvi['date'],
+                                      officeRuuvi['Humidity'] - outerHumidity)
+        pressDiff2 = officeRuuvi.select(officeRuuvi['date'],
+                                        officeRuuvi['Pressure'] - outerPressure)
+        # subtracting outer from office values to get differences
 
-    tmpPandas = tmp2.toPandas()
-    # joining the values into two separate data frames and then convertting
-    # them into pandas data frames
+        placeHolder = tempDiff.join(humDiff, on='date')
 
-    jsonHolder = pandasHolder.to_json(orient='records')
-    jsonTmp = tmpPandas.to_json(orient='records')
-    # convert pandas data frames to .json format
+        placeHolder2 = placeHolder.join(pressDiff, on='date')
 
-    dataFile = open('/media/k8908/ESD-USB/CF2017/Python/Data'
-                    '/live_data.json', 'a')
+        pandasHolder = placeHolder2.toPandas()
 
-    dataFile.write(jsonHolder + '\n' + jsonTmp + '\n')
+        tmp = tempDiff2.join(humDiff2, on='date')
 
-    dataFile.close()
-    # appending to a local file
+        tmp2 = tmp.join(pressDiff2, on='date')
+
+        tmpPandas = tmp2.toPandas()
+
+        # joining the values into two separate data frames and then convertting
+        # them into pandas data frames
+
+        tmpPandas.columns = ['Date', 'RuuviTemp - ' + diffDevice,
+                             'RuuviHumidity - ' + diffDevice,
+                             'RuuviPressure - ' +
+                             diffDevice]
+        pandasHolder.columns = ['Date', 'RaspTemp - ' + diffDevice,
+                                'RaspHumidity - ' + diffDevice,
+                                'RaspPressure - '
+                                + diffDevice]
+
+	# renaming columns for better identification in database
+
+        tmpPandas.set_index('Date', inplace=True)
+        pandasHolder.set_index('Date', inplace=True)
+
+        jsonHolder = pandasHolder.to_json(orient='records')
+        jsonTmp = tmpPandas.to_json(orient='records')
+
+	# converting the data frames to proper .json format
+
+        k = json.loads(jsonHolder)[0]
+        l = json.loads(jsonTmp)[0]
+
+        # convert pandas data frames to .json format
+
+        r = requests.post(
+            'http://-serveraddress:port-/api/v1/-authkey-/telemetry',
+            data=json.dumps(k))
+
+        r2 = requests.post(
+            'http://-serveraddress:port-/api/v1/-authkey-/telemetry',
+            data=json.dumps(l))
+
+	# dumping the data to a cassandra server
+
+        print(r, r2)
+
+    else:
+        pass
 
 
 sc = SparkContext(appName="kafkaTest")
@@ -124,7 +174,7 @@ sqlc = SQLContext(spark)
 # prototyping SQLContext for use with cahce clearing
 
 kafkaStream = KafkaUtils.createDirectStream(ssc, ["test-topic"],
-                            {"metadata.broker.list": "192.168.51.140:9092"})
+                            {"metadata.broker.list": "-serveraddress:port-"})
 
 # defining the address and port of the Kafka server, passing the topic
 # argument in order to find the right stream
@@ -143,10 +193,7 @@ words.foreachRDD(process)
 ssc.start()
 # tells the program to start streaming
 
-ssc.awaitTerminationOrTimeout(10000)
-# telling the program to wait for termination or timeout after specified
-# amount of seconds
+ssc.awaitTermination()
+# telling the program to wait for user termination
 
-# TODO: renaming the columns for device identification purposes
-
-# TODO: sending the data back to Cassandra
+# TODO: figure out a way for the script to work with one office data source
