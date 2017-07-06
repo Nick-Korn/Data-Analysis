@@ -3,7 +3,10 @@ IOTcassandraAVG.py
 
 Created by: Niko Liimatainen 26.6.2017
 Modified by: Niko Liimatainen 27.6.2017
-             Niko Liimatainen 29.6.2017
+             -||- 29.6.2017
+             -||- 3.7.2017
+             -||- 4.7.2017
+             -||- 5.7.2017
 
 
 This script is used to access the Mysticons IOT-departments Cassandra database
@@ -24,8 +27,10 @@ def avgCounter(df, firstStamp, gmtime, strftime, dumps, dataFile):
     # getting device name for future usage
     key = df.select(df['key']).head()[0]
     # getting key, which is the name of the data type being filtered
-    while x < 6:
-        # the loop for going through x-1 weeks worth of data
+    weeks = (df.groupBy().max('ts').head()[0] - firstStamp)/weekMs
+    # getting the amount of weeks that have passed since the first timestamp
+    while x < weeks + 1:
+        # the loop for going through weeks + 1 worth of data
         week = firstStamp + weekMs
         weekDf = df.filter(df['ts'] > firstStamp)
         weekDf = weekDf.filter(weekDf['ts'] < week)
@@ -81,7 +86,7 @@ firstStamp = 1495411200000
 
 # defining the start of the first week with Epoch time in milliseconds
 
-dataFile = open('/media/k8908/J_CENA_X64FREV_EN-US_DV5/CF2017/Python/Data'
+dataFile = open('/media/k8908/ESD-USB/CF2017/Python/Data'
                 '/Weekly_avg.json', 'w')
 
 # open .json file for writing
