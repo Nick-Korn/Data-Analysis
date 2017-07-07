@@ -35,7 +35,7 @@ def process(time, rdd):
 
     try:
         print("========= %s =========" % str(time))
-        # printing the time of refresh for more streamlined streaming experience
+        # printing the time when data is processed  for more streamlined streaming experience
 
         df = spark.createDataFrame(rdd)
         # creating a data frame from the received
@@ -66,8 +66,7 @@ def process(time, rdd):
 
 def comparison(df, officeRuuvi, officeRasp):
     if df.count() != 0:
-	# the if statment allows the script work if it has atleast one outer
-	# data source
+	# this if statment enables the script to work better with fewer data sources
         device = df.select(df['serialNumber']).head()[0]
 
         if device == 'raspi-o827rossr2qn':
@@ -82,13 +81,13 @@ def comparison(df, officeRuuvi, officeRasp):
         elif device == 'raspi-o827ro1884pn':
             diffDevice = 'staircase'
 
-	# if statments for identifying the current device being opertaed 
+	# if statments for identifying the current device being opertaed
 	# and assigning it's name for id purposes
 
         outerTemp = df.select(df['temp']).head()[0]
         outerHumidity = df.select(df['humidity']).head()[0]
         outerPressure = df.select(df['pressure']).head()[0]
-        # getting the outer values for subtraction
+        # getting the external values for subtraction
 
         tempDiff = officeRasp.select(officeRasp['date'],
                                      officeRasp['Temp'] - outerTemp)
@@ -102,7 +101,7 @@ def comparison(df, officeRuuvi, officeRasp):
                                       officeRuuvi['Humidity'] - outerHumidity)
         pressDiff2 = officeRuuvi.select(officeRuuvi['date'],
                                         officeRuuvi['Pressure'] - outerPressure)
-        # subtracting outer from office values to get differences
+        # subtracting external values from office values to get differences
 
         placeHolder = tempDiff.join(humDiff, on='date')
 
@@ -116,7 +115,7 @@ def comparison(df, officeRuuvi, officeRasp):
 
         tmpPandas = tmp2.toPandas()
 
-        # joining the values into two separate data frames and then convertting
+        # joining the values into two separate data frames and then converting
         # them into pandas data frames
 
         tmpPandas.columns = ['Date', 'RuuviTemp - ' + diffDevice,
@@ -128,7 +127,7 @@ def comparison(df, officeRuuvi, officeRasp):
                                 'RaspPressure - '
                                 + diffDevice]
 
-	# renaming columns for better identification in database
+	# renaming columns for better identification purposes in database
 
         tmpPandas.set_index('Date', inplace=True)
         pandasHolder.set_index('Date', inplace=True)
@@ -136,12 +135,10 @@ def comparison(df, officeRuuvi, officeRasp):
         jsonHolder = pandasHolder.to_json(orient='records')
         jsonTmp = tmpPandas.to_json(orient='records')
 
-	# converting the data frames to proper .json format
-
         k = json.loads(jsonHolder)[0]
         l = json.loads(jsonTmp)[0]
 
-        # convert pandas data frames to .json format
+        # convert pandas data frames to proper .json formatting
 
         r = requests.post(
             'http://-serveraddress:port-/api/v1/-authkey-/telemetry',
@@ -151,7 +148,7 @@ def comparison(df, officeRuuvi, officeRasp):
             'http://-serveraddress:port-/api/v1/-authkey-/telemetry',
             data=json.dumps(l))
 
-	# dumping the data to a cassandra server
+	# dumping the data to the cassandra server
 
         print(r, r2)
 
