@@ -9,7 +9,7 @@ Modified by: Niko Liimatainen 29.6.2017
              -||- 4.7.2017
              -||- 5.7.2017
              -||- 6.7.2017
-
+	     -||- 12.7.2017
 A script that gets live data and compares outside sensor data to the data
 acquired from the office sensors
 """
@@ -66,7 +66,7 @@ def process(time, rdd):
 
 def comparison(df, officeRuuvi, officeRasp):
     if df.count() != 0:
-	# this if statment enables the script to work better with fewer data sources
+        # this if statment enables the script to work better with fewer data sources
         device = df.select(df['serialNumber']).head()[0]
 
         if device == 'raspi-o827rossr2qn':
@@ -81,8 +81,8 @@ def comparison(df, officeRuuvi, officeRasp):
         elif device == 'raspi-o827ro1884pn':
             diffDevice = 'staircase'
 
-	# if statments for identifying the current device being opertaed
-	# and assigning it's name for id purposes
+        # if statments for identifying the current device being opertaed
+        # and assigning it's name for id purposes
 
         outerTemp = df.select(df['temp']).head()[0]
         outerHumidity = df.select(df['humidity']).head()[0]
@@ -127,7 +127,7 @@ def comparison(df, officeRuuvi, officeRasp):
                                 'RaspPressure - '
                                 + diffDevice]
 
-	# renaming columns for better identification purposes in database
+        # renaming columns for better identification purposes in database
 
         tmpPandas.set_index('Date', inplace=True)
         pandasHolder.set_index('Date', inplace=True)
@@ -141,14 +141,14 @@ def comparison(df, officeRuuvi, officeRasp):
         # convert pandas data frames to proper .json formatting
 
         r = requests.post(
-            'http://-serveraddress:port-/api/v1/-authkey-/telemetry',
+            'http://-ip:port-/api/v1/-authkey-/telemetry',
             data=json.dumps(k))
 
         r2 = requests.post(
-            'http://-serveraddress:port-/api/v1/-authkey-/telemetry',
+            'http://-ip:port-/api/v1/-authkey-/telemetry',
             data=json.dumps(l))
 
-	# dumping the data to the cassandra server
+        # dumping the data to the cassandra server
 
         print(r, r2)
 
@@ -171,7 +171,9 @@ sqlc = SQLContext(spark)
 # prototyping SQLContext for use with cahce clearing
 
 kafkaStream = KafkaUtils.createDirectStream(ssc, ["test-topic"],
-                            {"metadata.broker.list": "-serveraddress:port-"})
+                                            {"metadata.broker.list":
+                                                    "-ip:port-"})
+
 
 # defining the address and port of the Kafka server, passing the topic
 # argument in order to find the right stream
@@ -193,4 +195,4 @@ ssc.start()
 ssc.awaitTermination()
 # telling the program to wait for user termination
 
-# TODO: figure out a way for the script to work with one office data source
+# TODO: figure out a way for the script to work with only one office data source

@@ -1,4 +1,4 @@
 # Data-Analysis
-Data-Analysis processes and their implementation, while working at WIMMA Labs
+Data-Analysis processes and their implementation, while working at WIMMA Lab
 
  * [Link to the wiki](https://cybertrust.labranet.jamk.fi/data-analysis/documentation/wikis/home)
