@@ -9,6 +9,9 @@ Modified: 1.6.2017 by Niko Liimatainen
 
 Simple XML parser and .json converter.
 
+Documentation for use case can be found here:
+
+https://cybertrust.labranet.jamk.fi/data-analysis/documentation/wikis/spark-demo
 """
 
 

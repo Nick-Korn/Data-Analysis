@@ -9,9 +9,12 @@ Modified by: Niko Liimatainen 29.6.2017
              -||- 4.7.2017
              -||- 5.7.2017
              -||- 6.7.2017
-	     -||- 12.7.2017
+
 A script that gets live data and compares outside sensor data to the data
 acquired from the office sensors
+
+Documentation on this script can be found here:
+https://cybertrust.labranet.jamk.fi/data-analysis/documentation/wikis/spark-streaming-with-kafka
 """
 
 import json
@@ -141,14 +144,15 @@ def comparison(df, officeRuuvi, officeRasp):
         # convert pandas data frames to proper .json formatting
 
         r = requests.post(
-            'http://-ip:port-/api/v1/-authkey-/telemetry',
+            'http://-ip:port-/api/v1/-apikey-/telemetry',
             data=json.dumps(k))
 
         r2 = requests.post(
-            'http://-ip:port-/api/v1/-authkey-/telemetry',
+            'http://-ip:port-/api/v1/-apikey-/telemetry',
             data=json.dumps(l))
 
-        # dumping the data to the cassandra server
+        # dumping the data to the cassandra server via an api-key acquired 
+	# from thingsboard
 
         print(r, r2)
 
@@ -172,7 +176,7 @@ sqlc = SQLContext(spark)
 
 kafkaStream = KafkaUtils.createDirectStream(ssc, ["test-topic"],
                                             {"metadata.broker.list":
-                                                    "-ip:port-"})
+                                                    ip-port})
 
 
 # defining the address and port of the Kafka server, passing the topic

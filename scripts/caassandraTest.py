@@ -8,6 +8,9 @@ Modified by Niko Liimatainen: 14.6.2017
             Niko Liimatainen: 15.6.2017
 
 Short first script testing Cassandra integration to Spark.
+
+Documentation on Cassandra integration can be found here:
+https://cybertrust.labranet.jamk.fi/data-analysis/documentation/wikis/cassandra-integration
 """
 
 

@@ -14,6 +14,8 @@ A first attempt at analysing a .json file with spark and trying to make 'smart'
 deductions based on it.
 WARNING: This is a first attempt so it might be extremely sucky.
 
+Documentation on thi demo can be found here:
+https://cybertrust.labranet.jamk.fi/data-analysis/documentation/wikis/spark-demo
 """
 import re
 from pyspark.sql import SparkSession

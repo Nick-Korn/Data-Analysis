@@ -13,6 +13,9 @@ Modified by: Niko Liimatainen 27.6.2017
 
 This script is used to access the Mysticons IOT-departments Cassandra database
 and calculating averages on their Raspberry Pi weather sensor data.
+
+Documentation for this project can be found here:
+https://cybertrust.labranet.jamk.fi/data-analysis/documentation/wikis/cassandra-integration
 """
 
 from pyspark import SparkConf
@@ -32,7 +35,7 @@ def avgCounter(df, firstStamp, gmtime, strftime, dumps, dataFile):
     weeks = (df.groupBy().max('ts').head()[0] - firstStamp)/weekMs
     # getting the amount of weeks that have passed since the first timestamp
     for x in range(0, int(weeks)):
-        # the loop for going through the amount of weeks that have passed
+        # the loop for going through weeks + 1 worth of data
         week = firstStamp + weekMs
         weekDf = df.filter(df['ts'] > firstStamp)
         weekDf = weekDf.filter(weekDf['ts'] < week)
@@ -62,7 +65,7 @@ def avgCounter(df, firstStamp, gmtime, strftime, dumps, dataFile):
         # allocating variables for next loop. Shifting the firstStamp value
         # to the one that was calculated earlier to get the right time frame
 
-conf = SparkConf().set('spark.cassandra.connection.host', '-ip-')
+conf = SparkConf().set('spark.cassandra.connection.host', -ip-)
 
 spark = SparkSession \
     .builder \
@@ -90,7 +93,7 @@ firstStamp = 1495411200000
 
 # defining the start of the first week with Epoch time in milliseconds
 
-dataFile = open('-localfilepath-', 'w')
+dataFile = open(-localfilepath-, 'w')
 
 # open .json file for writing
 
