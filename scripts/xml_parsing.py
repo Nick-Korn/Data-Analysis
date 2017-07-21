@@ -18,20 +18,20 @@ https://cybertrust.labranet.jamk.fi/data-analysis/documentation/wikis/spark-demo
 import xml.etree.ElementTree as etree
 import json
 
-root = etree.parse('./Data/weatherDaily').getroot()  # gets the local XML file
-# and it's root for parsing
+# gets the local XML file and it's root for parsing
+root = etree.parse('./Data/weatherDaily').getroot()
 
 i = 0
 
 
-dataFile = open('./Data/Weather-Daily_Parsed.json', 'w')
+dataFile = open(-localfilepath-, 'w')
 
-for child in root:  # loop for going through the proper nested lists in the
-    # XMl-file
+# loop for going through the proper nested lists in the XMl-file
+for child in root:
+    # setting the data as a dict for better .json compatibility
     data = {"Time": root[i][0][1].text,
             "Type": root[i][0][2].text,
             "Value": float(root[i][0][3].text)}
-    # setting the data as a dict for better .json compatibility
     i += 1
     dump = json.dumps(data)  # converting data dict to .json dump
     dataFile.write(dump + "\n")  # writing the dump to file with newline

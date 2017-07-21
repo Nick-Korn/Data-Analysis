@@ -24,10 +24,9 @@ from pyspark.sql.functions import udf
 from pyspark.sql.types import BooleanType
 
 
-# all the imports required in order to function like it's meant to be
-
-
 def regex_filter(x):
+    # A regex filter to find the temperature values of a month. Could be
+    # implemented better
     regexs = [r'2015-05-\d\d\w\d\d:\d\d:\d\d\w']
 
     if x and x.strip():
@@ -37,12 +36,8 @@ def regex_filter(x):
 
     return False
 
-
-# A regex filter to find the temperature values of a month. Could be
-# implemented better
-
-conf = SparkConf().setMaster("local[8]")  # Spark conf in order to run the
-# demo locally
+# Spark conf in order to run the  demo locally
+conf = SparkConf().setMaster("local[8]")
 
 spark = SparkSession \
     .builder \
@@ -50,9 +45,8 @@ spark = SparkSession \
     .config(conf=conf) \
     .getOrCreate()
 
-df = spark.read.json(
-    "/opt/Spark/projects/Data/Weather-Daily_Parsed.json")
-# importing the local file
+# importing the local file and putting it into a data frame
+df = spark.read.json("-localfilepath-")
 
 
 print('\n\n----------Weather data measured at Jyvaskyla Airport----------\n\n')
@@ -63,15 +57,15 @@ print('Types of data and the amount of times they appear in the database: ')
 
 df.groupBy("type").count().show()
 
-print('\nDays of observation: \n' + str(df.count() / 5) + '\n')  # we divide
-# by the amount of different kinds of observation types to find out the days
-# of observation
+# we divide by the amount of different kinds of observation types to find out
+#  the days of observation
+print('\nDays of observation: \n' + str(df.count() / 5) + '\n')
 
 first = df.first()  # quite straightforward way of getting the first time stamp
 
+# the method to find the last time stamp
 lastRow = df.collect()
 last = lastRow[df.count() - 1]
-# the method to find the last time stamp
 
 print('Time frame of the observations: ' + first['Time'] + ' - ' +
       last['Time'] + '\n')
@@ -87,10 +81,10 @@ tmaxValues.filter(df['value'] > 20).show(maxCount)
 print('Days with temperature minimum value of under -20 celsius '
       'and the specific values: ')
 
+# same comments from the one above apply here
 tminValues = df.filter(df['type'] == 'tmin')
 minCount = tminValues.filter(df['value'] < -20).count()
 tminValues.filter(df['value'] < -20).show(minCount)
-# same comments from the one above apply here
 
 
 print('Daily temperature averages: ')
@@ -114,27 +108,27 @@ tDayValue.groupBy().avg('value').show()  # method for getting the average
 
 print('Days when precipitation happened, ie. when something rained or snowed: ')
 
+# proper filtering
 rrDays = df.filter(df['type'] == 'rrday')
 rrDayCount = rrDays.filter(df['value'] >= 0).count()
 rrDays.filter(df['value'] >= 0).show(rrDayCount)
-# proper filtering
 
 
 print('Days when there was snow on the ground: ')
 
+# proper filtering
 snowDays = df.filter(df['type'] == 'snow')
 snowCount = snowDays.filter(df['value'] >= 0).count()
 snowDays.filter(df['value'] >= 0).show(snowCount)
-# proper filtering
 
 maxCounts = tmaxValues.filter(df['value'] > 20)
 minCounts = tminValues.filter(df['value'] < -20)
 rainDays = rrDays.filter(df['value'] >= 0)
 
+# convert data frames to temporary tables in order to run SQL-queries in
+# Zeppelin
 snowDays.registerTempTable('snow_days')
 maxCounts.registerTempTable('max_temps')
 minCounts.registerTempTable('min_temps')
 rainDays.registerTempTable('rain_days')
 
-# convert data frames to temporary tables in order to run SQL-queries in
-# Zeppelin

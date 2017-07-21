@@ -19,7 +19,6 @@ https://cybertrust.labranet.jamk.fi/data-analysis/documentation/wikis/spark-stre
 
 import json
 import requests
-import pandas as pd
 
 from pyspark import SparkContext, RDD
 from pyspark.sql import Row, SparkSession, streaming, SQLContext
@@ -28,49 +27,51 @@ from pyspark.streaming.kafka import KafkaUtils
 
 
 def process(time, rdd):
+    # setting device identification based on their serialNumber
     devices = {'officeRasp': 'raspi-o827ro544093',
                'officeRuuvi': 'ruuvitag-E6BCD58A2A52',
                'd425Rasp': 'raspi-o827rossr2qn',
                'd425Ruuvi': 'ruuvitag-F7AFD68CBFB1',
                'hallway': 'raspi-o827ro3qoqqo',
                'staircase': 'raspi-o827ro1884pn'}
-    # setting device identification based on their serialNumber
 
     try:
-        print("========= %s =========" % str(time))
         # printing the time when data is processed  for more streamlined streaming experience
+        print("========= %s =========" % str(time))
 
-        df = spark.createDataFrame(rdd)
         # creating a data frame from the received
-
-        df.cache()
+        df = spark.createDataFrame(rdd)
 
         # caching the crated data
+        df.cache()
+
+        # creating filtered data frames containing only the specific devices
+        # data
         officeRuuvi = df.filter(df['serialNumber'] == devices['officeRuuvi'])
         officeRasp = df.filter(df['serialNumber'] == devices['officeRasp'])
         comp425Ruuvi = df.filter(df['serialNumber'] == devices['d425Ruuvi'])
         comp425Rasp = df.filter(df['serialNumber'] == devices['d425Rasp'])
         compHallway = df.filter(df['serialNumber'] == devices['hallway'])
         compStair = df.filter(df['serialNumber'] == devices['staircase'])
-        # creating filtered data frames containing only the specific devices
-        # data
 
+        # calling all functions
         comparison(comp425Rasp, officeRuuvi, officeRasp)
         comparison(comp425Ruuvi, officeRuuvi, officeRasp)
         comparison(compHallway, officeRuuvi, officeRasp)
         comparison(compStair, officeRuuvi, officeRasp)
-        # calling all functions
 
-        sqlc.clearCahce()
         # clearing the cache
+        sqlc.clearCahce()
     except:
         pass
 
 
 def comparison(df, officeRuuvi, officeRasp):
+    # this if statment enables the script to work better with fewer data sources
     if df.count() != 0:
-        # this if statment enables the script to work better with fewer data sources
         device = df.select(df['serialNumber']).head()[0]
+        # if statments for identifying the current device being opertaed
+        # and assigning it's name for id purposes
 
         if device == 'raspi-o827rossr2qn':
             diffDevice = 'd425Ruuvi'
@@ -84,14 +85,13 @@ def comparison(df, officeRuuvi, officeRasp):
         elif device == 'raspi-o827ro1884pn':
             diffDevice = 'staircase'
 
-        # if statments for identifying the current device being opertaed
-        # and assigning it's name for id purposes
 
+        # getting the external values for subtraction
         outerTemp = df.select(df['temp']).head()[0]
         outerHumidity = df.select(df['humidity']).head()[0]
         outerPressure = df.select(df['pressure']).head()[0]
-        # getting the external values for subtraction
 
+        # subtracting external values from office values to get differences
         tempDiff = officeRasp.select(officeRasp['date'],
                                      officeRasp['Temp'] - outerTemp)
         humDiff = officeRasp.select(officeRasp['date'],
@@ -104,8 +104,9 @@ def comparison(df, officeRuuvi, officeRasp):
                                       officeRuuvi['Humidity'] - outerHumidity)
         pressDiff2 = officeRuuvi.select(officeRuuvi['date'],
                                         officeRuuvi['Pressure'] - outerPressure)
-        # subtracting external values from office values to get differences
 
+        # joining the values into two separate data frames and then converting
+        # them into pandas data frames
         placeHolder = tempDiff.join(humDiff, on='date')
 
         placeHolder2 = placeHolder.join(pressDiff, on='date')
@@ -118,9 +119,8 @@ def comparison(df, officeRuuvi, officeRasp):
 
         tmpPandas = tmp2.toPandas()
 
-        # joining the values into two separate data frames and then converting
-        # them into pandas data frames
 
+        # renaming columns for better identification purposes in database
         tmpPandas.columns = ['Date', 'RuuviTemp - ' + diffDevice,
                              'RuuviHumidity - ' + diffDevice,
                              'RuuviPressure - ' +
@@ -130,7 +130,6 @@ def comparison(df, officeRuuvi, officeRasp):
                                 'RaspPressure - '
                                 + diffDevice]
 
-        # renaming columns for better identification purposes in database
 
         tmpPandas.set_index('Date', inplace=True)
         pandasHolder.set_index('Date', inplace=True)
@@ -138,21 +137,20 @@ def comparison(df, officeRuuvi, officeRasp):
         jsonHolder = pandasHolder.to_json(orient='records')
         jsonTmp = tmpPandas.to_json(orient='records')
 
+        # convert pandas data frames to proper .json formatting
         k = json.loads(jsonHolder)[0]
         l = json.loads(jsonTmp)[0]
 
-        # convert pandas data frames to proper .json formatting
+        # dumping the data to the cassandra server
 
         r = requests.post(
-            'http://-ip:port-/api/v1/-apikey-/telemetry',
+            'http://-ip:port-/api/v1/-accesstoken-/telemetry',
             data=json.dumps(k))
 
         r2 = requests.post(
-            'http://-ip:port-/api/v1/-apikey-/telemetry',
+            'http://-ip:port-/api/v1/-accesstoken-/telemetry',
             data=json.dumps(l))
 
-        # dumping the data to the cassandra server via an api-key acquired 
-	# from thingsboard
 
         print(r, r2)
 
@@ -160,43 +158,43 @@ def comparison(df, officeRuuvi, officeRasp):
         pass
 
 
+# creating streaming context and specifying the refresh time in seconds
 sc = SparkContext(appName="kafkaTest")
 ssc = StreamingContext(sc, 30)
-# creating streaming context and specifying the refresh time in seconds
 
 
+# SparkSession for spark.sql
 spark = SparkSession \
     .builder \
     .getOrCreate()
-# SparkSession for spark.sql
-
-sqlc = SQLContext(spark)
 
 # prototyping SQLContext for use with cahce clearing
-
-kafkaStream = KafkaUtils.createDirectStream(ssc, ["test-topic"],
-                                            {"metadata.broker.list":
-                                                    ip-port})
+sqlc = SQLContext(spark)
 
 
 # defining the address and port of the Kafka server, passing the topic
 # argument in order to find the right stream
+kafkaStream = KafkaUtils.createDirectStream(ssc, ["test-topic"],
+                                            {"metadata.broker.list":
+                                                    -ip:port-})
 
 
-words = kafkaStream.map(lambda line: json.loads(line[1]))
+
 
 # kafka stream returns tuples so we map the data to a .json format for data
 # frame processing
+words = kafkaStream.map(lambda line: json.loads(line[1]))
 
 
-words.foreachRDD(process)
+
 # using the function on the RDD:s acquired from the stream
+words.foreachRDD(process)
 
 
-ssc.start()
 # tells the program to start streaming
+ssc.start()
 
-ssc.awaitTermination()
 # telling the program to wait for user termination
+ssc.awaitTermination()
 
 # TODO: figure out a way for the script to work with only one office data source

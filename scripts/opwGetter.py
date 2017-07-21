@@ -4,7 +4,7 @@ import requests
 import time
 import json
 
-url = "http://api.openweathermap.org/data/2.5/weather?id=655195&units=metric&type=like&APPID=d1d8f04e2041d9dcfd2139ca5a6b1258"
+url = "http://api.openweathermap.org/data/2.5/weather?id=655195&units=metric&type=like&APPID=-apikey-"
 r = requests.get(url)
 datall = r.json()
 
@@ -26,7 +26,7 @@ thingsDict = {'ts':data['ts']*1000, 'values':{'date': data['date'],
          'temp': data['temp']}}
 print(thingsDict)
 r = requests.post(
-    'http://192.168.51.176:8080/api/v1/swWXjGcqRjHsB3rTIbXD/telemetry',
+    'http://-ip:port-/api/v1/-accestoken-/telemetry',
      data=json.dumps(thingsDict))
 
 print(r)

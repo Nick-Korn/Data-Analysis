@@ -25,99 +25,100 @@ from json import dumps
 
 
 def avgCounter(df, firstStamp, gmtime, strftime, dumps, dataFile):
-    weekMs = 604800000
     # one week in Epoch milliseconds
+    weekMs = 604800000
 
-    device = df.select(df['entity_id']).head()[0]
     # getting device name for future usage
-    key = df.select(df['key']).head()[0]
+    device = df.select(df['entity_id']).head()[0]
     # getting key, which is the name of the data type being filtered
-    weeks = (df.groupBy().max('ts').head()[0] - firstStamp)/weekMs
+    key = df.select(df['key']).head()[0]
     # getting the amount of weeks that have passed since the first timestamp
+    weeks = (df.groupBy().max('ts').head()[0] - firstStamp)/weekMs
+    # the loop for going through weeks + 1 worth of data
     for x in range(0, int(weeks)):
-        # the loop for going through weeks + 1 worth of data
         week = firstStamp + weekMs
-        weekDf = df.filter(df['ts'] > firstStamp)
-        weekDf = weekDf.filter(weekDf['ts'] < week)
         # using the start day timestamp and the weekMs variable to filter a
         # specific week
-        dfAvg = weekDf.groupBy().avg('dbl_v')
+        weekDf = df.filter(df['ts'] > firstStamp)
+        weekDf = weekDf.filter(weekDf['ts'] < week)
         # getting the avg of the double values as a data frame
-        avg = dfAvg.head()[0]
+        dfAvg = weekDf.groupBy().avg('dbl_v')
         # this line gets the first value of the column
+        avg = dfAvg.head()[0]
 
-        start = strftime('%d.%m.%Y %H:%M:%S', gmtime(firstStamp / 1000))
-        end = strftime('%d.%m.%Y %H:%M:%S', gmtime(week / 1000))
         # converting the epoch timestamps used to the specified format. We
         # divide by 1000 to get rid of the milliseconds
+        start = strftime('%d.%m.%Y %H:%M:%S', gmtime(firstStamp / 1000))
+        end = strftime('%d.%m.%Y %H:%M:%S', gmtime(week / 1000))
 
+        # putting the data to a dict
         data = {"Device": device,
                 "Time frame": start + '-' + end,
                 "Datatype": key,
                 "Avg value": avg}
-        # putting the data to a dict
-        dump = dumps(data)
         # dict to .json dump
-        dataFile.write(dump + '\n')
+        dump = dumps(data)
         # writing the dump to a datafile
+        dataFile.write(dump + '\n')
 
-        firstStamp = week
         # allocating variables for next loop. Shifting the firstStamp value
         # to the one that was calculated earlier to get the right time frame
+        firstStamp = week
 
 conf = SparkConf().set('spark.cassandra.connection.host', -ip-)
 
+# configuring Spark session for SparkSql
 spark = SparkSession \
     .builder \
     .appName("IOTcassandraAVG") \
     .config(conf=conf) \
     .getOrCreate()
 
-# configuring Spark session for SparkSql
 
-sqlc = SQLContext(spark)
 # prototyping SQLContext for use with cahce clearing
-
-df = spark.read.format("org.apache.spark.sql.cassandra") \
-    .options(table="ts_kv_cf", keyspace="thingsboard").load()
+sqlc = SQLContext(spark)
 
 # setting the read format to cassandra, setting the right table and keyspace
 # in order to get the right data, loading that data to a Spark data frame
+df = spark.read.format("org.apache.spark.sql.cassandra") \
+    .options(table="ts_kv_cf", keyspace="thingsboard").load()
 
+
+# assigning device id's to variables for better usage
 officeRasp = "8990d510-3faa-11e7-a809-c53cc0543175"
 officeRuuvi = "6a46de80-4aa8-11e7-a8f9-c53cc0543175"
 
-# assigning device id's to variables for better usage
-
-firstStamp = 1495411200000
 
 # defining the start of the first week with Epoch time in milliseconds
+firstStamp = 1495411200000
 
-dataFile = open(-localfilepath-, 'w')
 
 # open .json file for writing
+dataFile = open(-localfilepath-,'w')
 
-df.cache()
 
 # using sparks .cache() function to cahce the data  that was acquired from
 # cassandra to ram for superior processing speeds
+df.cache()
 
+
+# filtering the database to find the correct entry
 filterRasp = df.filter(df['entity_id'] == officeRasp)
 filterRuuvi = df.filter(df['entity_id'] == officeRuuvi)
 
-# filtering the database to find the correct entry
 
 tempRasp = filterRasp.filter(df['key'] == 'temperature')
 pressureRasp = filterRasp.filter(df['key'] == 'air_pressure')
 humidityRasp = filterRasp.filter(df['key'] == 'humidity')
 
 
+# assigning value filters to variables from both devices
 tempRuuvi = filterRuuvi.filter(df['key'] == 'temperature')
 pressureRuuvi = filterRuuvi.filter(df['key'] == 'air_pressure')
 humidityRuuvi = filterRuuvi.filter(df['key'] == 'humidity')
 
-# assigning value filters to variables from both devices
 
+# calling the main function to specified data frames other required arguments
 avgCounter(tempRasp, firstStamp, gmtime, strftime, dumps, dataFile)
 avgCounter(pressureRasp, firstStamp, gmtime, strftime, dumps, dataFile)
 avgCounter(humidityRasp, firstStamp, gmtime, strftime, dumps, dataFile)
@@ -126,11 +127,10 @@ avgCounter(tempRuuvi, firstStamp, gmtime, strftime, dumps, dataFile)
 avgCounter(pressureRuuvi, firstStamp, gmtime, strftime, dumps, dataFile)
 avgCounter(humidityRuuvi, firstStamp, gmtime, strftime, dumps, dataFile)
 
-# calling the main function to specified data frames other required arguments
-
-sqlc.clearCache()
 
 # clearing the cache after the function has served it's purpose
+sqlc.clearCache()
+
 
 dataFile.close()
 
