@@ -17,8 +17,9 @@ This script accesses IoTitude's Cassandra database to get frustration levels
 and tries to make correlations between external data acquired from
 temperatureGetter.py
 
+Documentation regarding this Script can be found here:
+https://cybertrust.labranet.jamk.fi/data-analysis/documentation/wikis/correlation-with-weather--and-frustration-data
 """
-
 
 from pyspark.sql import SparkSession, SQLContext
 from pyspark import SparkConf
@@ -30,10 +31,9 @@ import json
 
 
 class FrustrationGetter:
-
     # Connecting to the correct Cassandra node
     conf = SparkConf().set('spark.cassandra.connection.host',
-                         -ip-)
+                           -cassandra_ip-)
 
     # creating SparkSession for spark.sql
     spark = SparkSession \
@@ -125,11 +125,12 @@ class FrustrationGetter:
             k = json.loads(tempJson)
 
             r = requests.post(
-                'http://-ip:port-/api/v1/-accesstoken-/'
+                'http://-thingsboard_ip:port-/api/v1/-accestoken-/'
                 'telemetry',
                 data=json.dumps(k))
 
             print(r)
+            print('\n')
 
-        # Returning the data frame for local storage
+        # Returning the data frame for local storage in cassandraGetter.py
         return self.baseDf

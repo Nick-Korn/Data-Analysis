@@ -10,9 +10,13 @@ Modified by Niko Liimatainen 10.7.2017
             -||- 17.7.2017
             -||- 18.7.2017
             -||- 21.7.2017
+	    -||- 24.7.2017
 
 Script for accessing a second cassandra database with weather data and
 getting relevant data filtered by frustrationCorrelation.py
+
+Documentation regarding this Script can be found here:
+https://cybertrust.labranet.jamk.fi/data-analysis/documentation/wikis/correlation-with-weather--and-frustration-data
 """
 
 from frustrationCorrelation import FrustrationGetter
@@ -27,7 +31,7 @@ import pickle
 class TemperatureGetter:
     # Establishing connection to a Cassandra node
     conf = SparkConf().set('spark.cassandra.connection.host',
-                           -ip-)
+                           -cassandra_ip-)
 
     # creating SparkSession for spark.sql
     spark = SparkSession \
@@ -98,7 +102,8 @@ class TemperatureGetter:
 
         # Here we use pickling to save the data frame we got from Frustration
         # correlation script locally
-        pickle_out = open(-localfilepath-,'wb')
+        pickle_out = open(-local_filepath-,
+                          'wb')
         pickle.dump(frustDf, pickle_out)
         pickle_out.close()
 
