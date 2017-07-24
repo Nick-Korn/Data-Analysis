@@ -4,7 +4,9 @@ correlationPlot.py
 
 Created by: Niko Liimtainen 18.7.2017
 Modified by: Niko Liimatinen 19.7.2017
-             -||- 19.7.2017
+             -||- 20.7.2017
+             -||- 21.7.2017
+             -||- 24.7.2017
 
 This script is used to make a scatter plot out of data gotten from
 frustration correlation script.
